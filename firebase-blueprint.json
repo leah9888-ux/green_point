@@ -1,0 +1,168 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User account profile storing point balances and eco activity metrics",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Firebase Auth UID",
+          "maxLength": 128
+        },
+        "name": {
+          "type": "string",
+          "description": "User display nickname",
+          "maxLength": 64
+        },
+        "email": {
+          "type": "string",
+          "description": "User email address",
+          "maxLength": 128
+        },
+        "points": {
+          "type": "number",
+          "description": "Available GREEN POINT balance"
+        },
+        "completedMissions": {
+          "type": "number",
+          "description": "Total completed eco missions"
+        },
+        "co2SavedTotalG": {
+          "type": "number",
+          "description": "Total grams of CO2 saved"
+        },
+        "level": {
+          "type": "string",
+          "description": "Eco fan level badge",
+          "maxLength": 64
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Last update timestamp",
+          "maxLength": 64
+        }
+      },
+      "required": ["uid", "name", "points", "completedMissions", "co2SavedTotalG"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Point earning or coupon exchange record",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique transaction ID",
+          "maxLength": 128
+        },
+        "userId": {
+          "type": "string",
+          "description": "Owner user UID",
+          "maxLength": 128
+        },
+        "title": {
+          "type": "string",
+          "description": "Transaction title or description",
+          "maxLength": 128
+        },
+        "points": {
+          "type": "number",
+          "description": "Point change amount (positive or negative)"
+        },
+        "date": {
+          "type": "string",
+          "description": "Display date string",
+          "maxLength": 64
+        },
+        "category": {
+          "type": "string",
+          "description": "Transaction category",
+          "enum": ["mission", "coupon", "bonus"],
+          "maxLength": 32
+        }
+      },
+      "required": ["id", "userId", "title", "points", "date", "category"]
+    },
+    "UserCoupon": {
+      "title": "UserCoupon",
+      "description": "Exchanged sports benefit coupon owned by the user",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique coupon item ID",
+          "maxLength": 128
+        },
+        "userId": {
+          "type": "string",
+          "description": "Owner user UID",
+          "maxLength": 128
+        },
+        "title": {
+          "type": "string",
+          "description": "Coupon title",
+          "maxLength": 128
+        },
+        "subtitle": {
+          "type": "string",
+          "description": "Partner venue or store details",
+          "maxLength": 128
+        },
+        "category": {
+          "type": "string",
+          "description": "Benefit category",
+          "enum": ["ticket", "goods", "food", "eco"],
+          "maxLength": 32
+        },
+        "requiredPoints": {
+          "type": "number",
+          "description": "Points spent to exchange"
+        },
+        "discountText": {
+          "type": "string",
+          "description": "Discount summary",
+          "maxLength": 64
+        },
+        "code": {
+          "type": "string",
+          "description": "Unique redemption barcode or code",
+          "maxLength": 64
+        },
+        "expiresAt": {
+          "type": "string",
+          "description": "Expiration date string",
+          "maxLength": 64
+        },
+        "description": {
+          "type": "string",
+          "description": "Terms of use",
+          "maxLength": 512
+        },
+        "used": {
+          "type": "boolean",
+          "description": "Whether the coupon was redeemed"
+        },
+        "usedAt": {
+          "type": "string",
+          "description": "Redemption timestamp",
+          "maxLength": 64
+        }
+      },
+      "required": ["id", "userId", "title", "code", "used"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profile with points and stats"
+    },
+    "/users/{userId}/transactions/{transactionId}": {
+      "schema": "Transaction",
+      "description": "Point earning and spending history"
+    },
+    "/users/{userId}/coupons/{couponId}": {
+      "schema": "UserCoupon",
+      "description": "Issued coupons owned by the user"
+    }
+  }
+}

@@ -1,0 +1,650 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GREEN POINT</title>
+<style>
+:root {
+  --green: #176b48;
+  --green-light: #eaf5ed;
+  --lime: #c8ed83;
+  --bg: #f6f8f4;
+  --text: #202c24;
+  --muted: #7a857d;
+  --white: #fff;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: #edf1eb;
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+    "Noto Sans KR", sans-serif;
+}
+button, input { font: inherit; }
+button { cursor: pointer; }
+.app {
+  width: 100%;
+  max-width: 430px;
+  min-height: 100vh;
+  margin: auto;
+  background: var(--bg);
+  position: relative;
+  padding-bottom: 88px;
+  overflow: hidden;
+}
+header {
+  height: 66px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 22px;
+  background: var(--bg);
+}
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 19px;
+  font-weight: 900;
+  color: var(--green);
+  letter-spacing: -0.8px;
+}
+.logo-mark {
+  width: 33px;
+  height: 33px;
+  border-radius: 12px;
+  background: var(--green);
+  display: grid;
+  place-items: center;
+}
+.logo-mark svg { width: 25px; }
+.icon-btn {
+  border: 0;
+  background: white;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  font-size: 19px;
+}
+.screen { display: none; padding: 8px 22px 25px; }
+.screen.active { display: block; animation: appear .22s ease; }
+@keyframes appear {
+  from { opacity: .5; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+h1 { font-size: 29px; line-height: 1.35; margin: 12px 0; letter-spacing: -1.3px; }
+h2 { font-size: 21px; margin: 0 0 14px; letter-spacing: -.6px; }
+h3 { font-size: 16px; margin: 0 0 7px; }
+p { line-height: 1.6; }
+.sub { color: var(--muted); font-size: 13px; }
+.green { color: var(--green); }
+.card {
+  background: white;
+  border-radius: 22px;
+  padding: 19px;
+  margin-bottom: 15px;
+  box-shadow: 0 5px 20px #1d412008;
+}
+.btn {
+  width: 100%;
+  border: 0;
+  border-radius: 15px;
+  background: var(--green);
+  color: white;
+  padding: 15px 18px;
+  font-weight: 750;
+  margin-top: 10px;
+}
+.btn.light { background: var(--green-light); color: var(--green); }
+.btn.outline { background: white; color: var(--green); border: 1px solid #d7e5d8; }
+.btn.small { width: auto; padding: 10px 14px; margin: 0; font-size: 12px; }
+.field { margin: 15px 0; }
+.field label { display: block; font-size: 13px; margin-bottom: 8px; font-weight: 700; }
+.field input {
+  width: 100%; padding: 15px; border-radius: 13px;
+  border: 1px solid #e2e7e0; outline-color: var(--green); background: white;
+}
+.hero {
+  background: var(--green);
+  color: white;
+  border-radius: 26px;
+  padding: 23px;
+  position: relative;
+  overflow: hidden;
+  min-height: 228px;
+}
+.hero h1 { font-size: 27px; margin-top: 0; position: relative; z-index: 1; }
+.hero p { font-size: 13px; opacity: .86; position: relative; z-index: 1; }
+.hero-art {
+  position: absolute;
+  width: 160px;
+  right: -10px;
+  bottom: -8px;
+}
+.pill {
+  display: inline-block;
+  padding: 7px 11px;
+  background: #ffffff24;
+  border-radius: 30px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 13px;
+}
+.section-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin: 25px 0 13px;
+}
+.text-btn { border: 0; background: transparent; color: var(--green); font-size: 12px; font-weight: 700; }
+.points-card {
+  background: #e5f2dc; border-radius: 21px; padding: 19px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.points-number { font-size: 31px; font-weight: 900; color: var(--green); margin-top: 7px; }
+.points-symbol { font-size: 40px; }
+.mission-list { display: grid; gap: 11px; }
+.mission {
+  display: flex; align-items: center; gap: 13px;
+  padding: 14px; background: white; border-radius: 17px;
+}
+.mission-art {
+  width: 53px; height: 53px; border-radius: 15px;
+  background: var(--green-light); display: grid; place-items: center; font-size: 26px;
+  flex-shrink: 0;
+}
+.mission-info { flex: 1; min-width: 0; }
+.mission-info h3 { font-size: 14px; }
+.mission-info p { margin: 4px 0 0; color: var(--green); font-size: 12px; font-weight: 700; }
+.mission button { border: 0; border-radius: 11px; padding: 9px 11px; background: var(--green); color: white; font-size: 11px; font-weight: 700; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.benefit {
+  background: white; padding: 16px; border-radius: 19px; min-height: 145px;
+}
+.benefit .emoji { font-size: 28px; margin-bottom: 13px; }
+.benefit h3 { font-size: 14px; line-height: 1.5; }
+.benefit p { font-size: 12px; color: var(--muted); margin-bottom: 0; }
+.coupon {
+  background: #e8f3e3; border: 1px dashed #a5c49c;
+  border-radius: 20px; padding: 22px; text-align: center;
+}
+.coupon-code {
+  font-size: 12px; letter-spacing: 3px; color: var(--green);
+  border: 1px dashed #7eaa84; border-radius: 9px; padding: 12px; margin: 17px 0;
+}
+.qr {
+  width: 118px; height: 118px; background: white; padding: 8px;
+  margin: 17px auto; display: grid; grid-template-columns: repeat(9,1fr);
+  grid-template-rows: repeat(9,1fr); gap: 2px;
+}
+.qr span { background: #fff; }
+.qr span.on { background: #173b29; }
+.progress {
+  height: 9px; background: #e8eee6; border-radius: 20px; overflow: hidden; margin: 12px 0;
+}
+.progress div { height: 100%; background: var(--green); border-radius: 20px; }
+.row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.history { padding: 13px 0; border-bottom: 1px solid #eff1ed; }
+.history:last-child { border: 0; }
+.history strong { color: var(--green); }
+.event {
+  background: white; border-radius: 17px; padding: 16px; margin-bottom: 11px;
+  display: flex; gap: 13px; align-items: center;
+}
+.event-date {
+  min-width: 53px; height: 58px; border-radius: 13px;
+  background: var(--green-light); color: var(--green);
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  font-weight: 900;
+}
+.event-date small { font-size: 10px; }
+.event-info { flex: 1; }
+.event-info p { font-size: 12px; color: var(--muted); margin: 4px 0 0; }
+.bottom-nav {
+  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: 430px; height: 75px; background: #ffffffef;
+  backdrop-filter: blur(12px); border-top: 1px solid #e9ede7;
+  display: none; align-items: center; justify-content: space-around;
+  z-index: 20; padding-bottom: env(safe-area-inset-bottom);
+}
+.bottom-nav.show { display: flex; }
+.nav-item {
+  background: none; border: 0; color: #929a93; font-size: 10px;
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  min-width: 57px;
+}
+.nav-item .nav-icon { font-size: 21px; }
+.nav-item.active { color: var(--green); font-weight: 800; }
+.back { border: 0; background: transparent; font-size: 14px; padding: 8px 0 15px; color: var(--muted); }
+.upload {
+  border: 1.5px dashed #b7cbb6; background: #f5faf3; border-radius: 18px;
+  min-height: 155px; display: flex; align-items: center; justify-content: center;
+  flex-direction: column; gap: 8px; text-align: center; padding: 15px;
+}
+.upload input { display: none; }
+.preview { width: 100%; max-height: 230px; object-fit: contain; border-radius: 14px; display: none; }
+.notice { background: #fff7df; color: #866a22; border-radius: 12px; padding: 12px; font-size: 12px; line-height: 1.6; margin: 14px 0; }
+.welcome { text-align: center; padding-top: 28px; }
+.welcome-art { width: 230px; max-width: 90%; margin: 18px auto; display: block; }
+.welcome h1 { font-size: 32px; }
+.welcome p { color: var(--muted); font-size: 14px; }
+.welcome .btn { margin-top: 12px; }
+.tag { font-size: 11px; color: var(--green); background: var(--green-light); padding: 6px 9px; border-radius: 9px; }
+@media (min-width: 600px) {
+  .app { margin: 25px auto; min-height: calc(100vh - 50px); border-radius: 28px; box-shadow: 0 12px 60px #172a1514; }
+  .bottom-nav { bottom: 25px; border-radius: 0 0 28px 28px; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo">
+      <div class="logo-mark">
+        <svg viewBox="0 0 40 40" fill="none" aria-label="잎사귀 로고">
+          <path d="M31 7C15 7 7 15 8 26c1 6 7 8 12 5C28 27 31 17 31 7Z" fill="#C8ED83"/>
+          <path d="M8 33c5-9 11-14 18-19" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+      GREEN POINT
+    </div>
+    <button class="icon-btn" onclick="navigate('profile')" aria-label="마이페이지">☻</button>
+  </header>
+
+  <!-- 시작 화면 -->
+  <section id="welcome" class="screen active">
+    <div class="welcome">
+      <span class="tag">GREEN FAN, GREEN LIFE</span>
+      <svg class="welcome-art" viewBox="0 0 250 250" role="img" aria-label="지구와 잎사귀 일러스트">
+        <circle cx="125" cy="125" r="105" fill="#E4F1D9"/>
+        <circle cx="125" cy="125" r="75" fill="#8CCB8A"/>
+        <path d="M60 105Q90 74 112 101L100 123L76 126Z" fill="#3F9364"/>
+        <path d="M145 62Q181 76 188 105L160 118L142 95Z" fill="#3F9364"/>
+        <path d="M128 143Q159 131 175 153L161 182L134 188L117 166Z" fill="#3F9364"/>
+        <path d="M73 150Q92 137 110 151L102 180L83 176Z" fill="#3F9364"/>
+        <path d="M98 90Q124 76 151 92Q167 109 151 131Q131 148 106 130Q88 113 98 90Z" fill="#C8ED83"/>
+        <path d="M111 122Q122 100 144 95" fill="none" stroke="#3F9364" stroke-width="4" stroke-linecap="round"/>
+        <path d="M38 70Q46 40 76 45Q77 72 48 78Z" fill="#176B48"/>
+        <path d="M205 162Q230 151 235 179Q217 197 198 181Z" fill="#176B48"/>
+        <circle cx="62" cy="180" r="8" fill="#C8ED83"/>
+        <circle cx="195" cy="65" r="6" fill="#C8ED83"/>
+        <path d="M85 215Q125 232 167 210" stroke="#176B48" stroke-width="4" stroke-linecap="round" fill="none"/>
+      </svg>
+      <h1>작은 실천이<br><span class="green">스포츠의 혜택</span>이 되다</h1>
+      <p>친환경 행동을 인증하고 포인트를 모아<br>스포츠를 더 특별하게 즐겨보세요.</p>
+      <button class="btn" onclick="navigate('login')">시작하기</button>
+      <button class="btn light" onclick="navigate('signup')">회원가입</button>
+      <p style="font-size:11px">GREEN POINT와 함께 만드는 지속 가능한 스포츠</p>
+    </div>
+  </section>
+
+  <!-- 로그인 -->
+  <section id="login" class="screen">
+    <button class="back" onclick="navigate('welcome')">← 뒤로</button>
+    <h1>다시 만나요! 🌱</h1>
+    <p class="sub">GREEN POINT에 로그인하고 친환경 활동을 이어가세요.</p>
+    <form onsubmit="login(event)">
+      <div class="field"><label>이메일</label><input id="loginEmail" type="email" placeholder="이메일을 입력하세요" required></div>
+      <div class="field"><label>비밀번호</label><input type="password" placeholder="비밀번호를 입력하세요" required></div>
+      <button class="btn" type="submit">로그인</button>
+    </form>
+    <button class="btn light" onclick="navigate('signup')">아직 회원이 아니신가요? 회원가입</button>
+    <p class="sub" style="text-align:center">프로토타입에서는 입력한 정보가 실제 계정으로 저장되지 않습니다.</p>
+  </section>
+
+  <!-- 회원가입 -->
+  <section id="signup" class="screen">
+    <button class="back" onclick="navigate('welcome')">← 뒤로</button>
+    <h1>함께 시작해요 🌿</h1>
+    <p class="sub">회원가입하고 나만의 GREEN POINT를 만들어보세요.</p>
+    <form onsubmit="signup(event)">
+      <div class="field"><label>닉네임</label><input id="signupName" placeholder="닉네임을 입력하세요" required></div>
+      <div class="field"><label>이메일</label><input type="email" placeholder="이메일을 입력하세요" required></div>
+      <div class="field"><label>비밀번호</label><input type="password" minlength="4" placeholder="4자 이상 입력하세요" required></div>
+      <button class="btn" type="submit">가입하고 시작하기</button>
+    </form>
+  </section>
+
+  <!-- 홈 -->
+  <section id="home" class="screen">
+    <p class="sub" id="greeting">오늘도 지구를 위한 한 걸음 🌎</p>
+    <div class="hero">
+      <span class="pill">GREEN ACTION, GREEN REWARD</span>
+      <h1>오늘의 작은 실천,<br>스포츠의 즐거움으로!</h1>
+      <p>친환경 미션을 완료하고<br>다양한 스포츠 혜택을 만나보세요.</p>
+      <svg class="hero-art" viewBox="0 0 180 180" aria-label="초록 지구 일러스트">
+        <circle cx="90" cy="90" r="75" fill="#C8ED83"/>
+        <path d="M28 67Q50 42 76 59L69 81L45 91Z" fill="#64AA71"/>
+        <path d="M102 26Q145 32 158 66L128 83L105 60Z" fill="#64AA71"/>
+        <path d="M100 103Q128 89 151 116L137 145L104 150L88 127Z" fill="#64AA71"/>
+        <path d="M46 112Q62 95 79 111L73 137L51 135Z" fill="#64AA71"/>
+        <path d="M73 76Q96 57 118 75Q134 92 118 111Q97 128 79 110Q62 94 73 76Z" fill="#176B48"/>
+        <path d="M83 104Q95 87 114 79" fill="none" stroke="#C8ED83" stroke-width="4" stroke-linecap="round"/>
+      </svg>
+    </div>
+
+    <div class="section-head"><h2>나의 포인트</h2><button class="text-btn" onclick="navigate('points')">내역 보기 →</button></div>
+    <div class="points-card">
+      <div><span class="sub">사용 가능한 GREEN POINT</span><div class="points-number"><span id="homePoints">0</span> P</div><p class="sub">10,000P부터 쿠폰 교환 가능</p></div>
+      <div class="points-symbol">🌱</div>
+    </div>
+
+    <div class="section-head"><h2>오늘의 친환경 미션</h2><button class="text-btn" onclick="navigate('missions')">전체 보기 →</button></div>
+    <div class="mission-list">
+      <div class="mission"><div class="mission-art">🥤</div><div class="mission-info"><h3>텀블러 사용하기</h3><p>+500P</p></div><button onclick="startMission('tumbler')">인증하기</button></div>
+      <div class="mission"><div class="mission-art">🚲</div><div class="mission-info"><h3>친환경 이동하기</h3><p>+700P</p></div><button onclick="startMission('bike')">인증하기</button></div>
+      <div class="mission"><div class="mission-art">♻️</div><div class="mission-info"><h3>경기장 다회용기 사용</h3><p>+1,000P</p></div><button onclick="startMission('stadium')">인증하기</button></div>
+    </div>
+
+    <div class="section-head"><h2>스포츠 혜택</h2><button class="text-btn" onclick="navigate('benefits')">더 보기 →</button></div>
+    <div class="grid2">
+      <div class="benefit" onclick="navigate('benefits')"><div class="emoji">🎟️</div><h3>스포츠 경기 혜택</h3><p>경기 관람과 연계된 혜택</p></div>
+      <div class="benefit" onclick="navigate('benefits')"><div class="emoji">🛍️</div><h3>굿즈샵 쿠폰</h3><p>포인트로 쿠폰 교환하기</p></div>
+    </div>
+  </section>
+
+  <!-- 미션 목록 -->
+  <section id="missions" class="screen">
+    <h1>친환경 미션 🌿</h1>
+    <p class="sub">일상 속 작은 실천을 인증하고 포인트를 모아보세요.</p>
+    <div class="mission-list" style="margin-top:20px">
+      <div class="mission"><div class="mission-art">🥤</div><div class="mission-info"><h3>텀블러 사용하기</h3><p>카페에서 개인 컵 사용 · +500P</p></div><button onclick="startMission('tumbler')">참여</button></div>
+      <div class="mission"><div class="mission-art">🚲</div><div class="mission-info"><h3>친환경 이동하기</h3><p>자전거 이용 인증 · +700P</p></div><button onclick="startMission('bike')">참여</button></div>
+      <div class="mission"><div class="mission-art">♻️</div><div class="mission-info"><h3>경기장 다회용기 사용</h3><p>다회용기 사용 인증 · +1,000P</p></div><button onclick="startMission('stadium')">참여</button></div>
+      <div class="mission"><div class="mission-art">👟</div><div class="mission-info"><h3>걷기 실천하기</h3><p>걷기 활동 인증 · +300P</p></div><button onclick="startMission('walk')">참여</button></div>
+    </div>
+    <div class="notice">※ 현재는 화면 흐름을 확인하기 위한 데모입니다. 사진 인증 결과를 실제 AI가 판별하거나 포인트를 서버에 저장하지 않습니다.</div>
+  </section>
+
+  <!-- 미션 인증 -->
+  <section id="verify" class="screen">
+    <button class="back" onclick="navigate('missions')">← 미션 목록</button>
+    <h1 id="verifyTitle">미션 인증하기</h1>
+    <p id="verifyDesc" class="sub">친환경 활동 사진을 올려주세요.</p>
+    <div class="card" style="margin-top:20px">
+      <div class="upload" id="uploadBox" onclick="document.getElementById('photoInput').click()">
+        <div style="font-size:35px">📷</div>
+        <strong>인증 사진 선택하기</strong>
+        <span class="sub">사진을 선택하면 미리보기가 표시됩니다.</span>
+        <input type="file" id="photoInput" accept="image/*" onchange="previewPhoto(event)">
+      </div>
+      <img id="photoPreview" class="preview" alt="선택한 인증 사진">
+      <div class="notice">데모 안내: 실제 인증 시스템에서는 사진의 활동 여부를 확인한 후 포인트를 지급해야 합니다.</div>
+      <button class="btn" onclick="submitMission()">인증 완료하기</button>
+    </div>
+  </section>
+
+  <!-- 포인트 -->
+  <section id="points" class="screen">
+    <h1>나의 포인트</h1>
+    <p class="sub">작은 실천이 쌓여 더 큰 스포츠 혜택이 됩니다.</p>
+    <div class="points-card" style="margin-top:20px">
+      <div><span class="sub">보유 GREEN POINT</span><div class="points-number"><span id="pointsTotal">0</span> P</div></div>
+      <div class="points-symbol">🌳</div>
+    </div>
+    <div class="card" style="margin-top:15px">
+      <div class="row"><strong>쿠폰 교환까지</strong><strong class="green" id="remainingPoints">10,000P 남음</strong></div>
+      <div class="progress"><div id="pointsProgress" style="width:0%"></div></div>
+      <p class="sub">10,000P를 모으면 스포츠 혜택 쿠폰으로 교환할 수 있어요.</p>
+      <button class="btn light" onclick="navigate('coupon')">쿠폰 확인하기</button>
+    </div>
+    <h2 style="margin-top:25px">포인트 적립 내역</h2>
+    <div class="card" id="pointHistory"><p class="sub">아직 적립 내역이 없습니다.</p></div>
+  </section>
+
+  <!-- 혜택 -->
+  <section id="benefits" class="screen">
+    <h1>스포츠 혜택 🎁</h1>
+    <p class="sub">모은 포인트를 스포츠를 즐기는 데 사용해보세요.</p>
+    <div class="grid2" style="margin-top:20px">
+      <div class="benefit"><div class="emoji">⚽</div><h3>스포츠 굿즈샵</h3><p>굿즈 구매 할인 쿠폰</p><button class="btn small" style="margin-top:13px" onclick="navigate('coupon')">쿠폰 보기</button></div>
+      <div class="benefit"><div class="emoji">🎟️</div><h3>경기 관람</h3><p>경기 티켓 관련 혜택</p><button class="btn small" style="margin-top:13px" onclick="navigate('sports')">일정 보기</button></div>
+      <div class="benefit"><div class="emoji">🥤</div><h3>음료 쿠폰</h3><p>경기 전후 음료 혜택</p><button class="btn small" style="margin-top:13px" onclick="navigate('coupon')">쿠폰 보기</button></div>
+      <div class="benefit"><div class="emoji">🌎</div><h3>친환경 스포츠</h3><p>지속 가능한 팬 활동</p><button class="btn small" style="margin-top:13px" onclick="navigate('missions')">미션 참여</button></div>
+    </div>
+    <div class="notice">위 혜택은 서비스 기획을 보여주기 위한 예시이며, 실제 제휴 또는 사용 가능한 쿠폰이 아닙니다.</div>
+  </section>
+
+  <!-- 쿠폰 -->
+  <section id="coupon" class="screen">
+    <h1>쿠폰 교환</h1>
+    <p class="sub">포인트를 모아 스포츠 혜택 쿠폰을 받아보세요.</p>
+    <div class="coupon" style="margin-top:22px">
+      <div style="font-size:35px">🎟️</div>
+      <h2 style="margin:10px 0">스포츠 굿즈샵 할인 쿠폰</h2>
+      <p class="sub">GREEN POINT 교환 예시</p>
+      <div style="font-size:25px;font-weight:900;color:var(--green)">10,000 P</div>
+      <div class="qr" id="qrCode" aria-label="데모용 QR 패턴"></div>
+      <p class="sub">실제 사용 가능한 QR 코드가 아닙니다.</p>
+      <div class="coupon-code">GREEN · DEMO · 0001</div>
+      <button class="btn" id="exchangeButton" onclick="exchangeCoupon()">10,000P로 교환하기</button>
+    </div>
+    <div class="notice">실제 쿠폰 사용을 위해서는 제휴처, 쿠폰 발급 서버, QR 검증 시스템이 추가로 필요합니다.</div>
+  </section>
+
+  <!-- 스포츠 일정 -->
+  <section id="sports" class="screen">
+    <h1>스포츠 일정 📅</h1>
+    <p class="sub">경기 일정과 혜택을 한곳에서 확인하는 화면입니다.</p>
+    <div class="notice">아래는 앱 화면을 보여주기 위한 예시 일정입니다. 실제 경기 일정과 연동되어 있지 않습니다.</div>
+    <div class="event"><div class="event-date"><small>SPORT</small>⚽</div><div class="event-info"><h3>축구 경기 일정</h3><p>경기 일정 및 티켓 혜택 확인</p></div><span class="tag">예시</span></div>
+    <div class="event"><div class="event-date"><small>SPORT</small>⚾</div><div class="event-info"><h3>야구 경기 일정</h3><p>경기 관람 및 굿즈 혜택 확인</p></div><span class="tag">예시</span></div>
+    <div class="event"><div class="event-date"><small>GREEN</small>🌱</div><div class="event-info"><h3>친환경 스포츠 미션</h3><p>경기장 방문 전 미션 확인하기</p></div><button class="btn small" onclick="navigate('missions')">미션 보기</button></div>
+  </section>
+
+  <!-- 마이페이지 -->
+  <section id="profile" class="screen">
+    <h1>마이페이지</h1>
+    <div class="card" style="margin-top:20px">
+      <div class="row">
+        <div style="display:flex;align-items:center;gap:13px">
+          <div style="font-size:32px;background:var(--green-light);border-radius:50%;width:58px;height:58px;display:grid;place-items:center">🌱</div>
+          <div><h2 id="profileName" style="margin:0">GREEN FAN</h2><p class="sub" style="margin:4px 0">지구를 위한 실천을 이어가는 중</p></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="row"><span>보유 포인트</span><strong class="green"><span id="profilePoints">0</span> P</strong></div>
+      <div class="history row"><span>참여한 미션</span><strong id="missionCount">0회</strong></div>
+      <div class="history row"><span>발급된 데모 쿠폰</span><strong id="couponCount">0개</strong></div>
+      <button class="btn light" onclick="navigate('points')">포인트 내역 보기</button>
+    </div>
+    <button class="btn outline" onclick="logout()">로그아웃</button>
+  </section>
+
+  <!-- 하단 메뉴 -->
+  <nav id="bottomNav" class="bottom-nav">
+    <button class="nav-item active" data-screen="home" onclick="navigate('home')"><span class="nav-icon">⌂</span>홈</button>
+    <button class="nav-item" data-screen="missions" onclick="navigate('missions')"><span class="nav-icon">♻</span>미션</button>
+    <button class="nav-item" data-screen="points" onclick="navigate('points')"><span class="nav-icon">◉</span>포인트</button>
+    <button class="nav-item" data-screen="benefits" onclick="navigate('benefits')"><span class="nav-icon">♧</span>혜택</button>
+    <button class="nav-item" data-screen="sports" onclick="navigate('sports')"><span class="nav-icon">⚽</span>스포츠</button>
+  </nav>
+</div>
+
+<script>
+const state = {
+  name: "GREEN FAN",
+  points: 0,
+  missions: 0,
+  coupons: 0,
+  history: [],
+  currentMission: null,
+  currentReward: 0,
+  photoSelected: false
+};
+
+const missionData = {
+  tumbler: { title: "텀블러 사용하기", desc: "개인 텀블러를 사용한 사진을 선택해주세요.", reward: 500 },
+  bike: { title: "친환경 이동하기", desc: "자전거를 이용한 활동 사진을 선택해주세요.", reward: 700 },
+  stadium: { title: "경기장 다회용기 사용", desc: "경기장에서 다회용기를 사용한 사진을 선택해주세요.", reward: 1000 },
+  walk: { title: "걷기 실천하기", desc: "걷기 활동을 보여주는 사진을 선택해주세요.", reward: 300 }
+};
+
+function navigate(screenId) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  const target = document.getElementById(screenId);
+  if (!target) return;
+  target.classList.add("active");
+
+  const loggedIn = !["welcome", "login", "signup"].includes(screenId);
+  document.getElementById("bottomNav").classList.toggle("show", loggedIn);
+
+  document.querySelectorAll(".nav-item").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.screen === screenId);
+  });
+
+  updateUI();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function login(event) {
+  event.preventDefault();
+  const email = document.getElementById("loginEmail").value.trim();
+  if (email) {
+    state.name = email.split("@")[0] || "GREEN FAN";
+    navigate("home");
+  }
+}
+
+function signup(event) {
+  event.preventDefault();
+  state.name = document.getElementById("signupName").value.trim() || "GREEN FAN";
+  navigate("home");
+  alert("데모 회원가입이 완료되었습니다!");
+}
+
+function logout() {
+  navigate("welcome");
+}
+
+function startMission(key) {
+  const mission = missionData[key];
+  if (!mission) return;
+  state.currentMission = key;
+  state.currentReward = mission.reward;
+  state.photoSelected = false;
+
+  document.getElementById("verifyTitle").textContent = mission.title;
+  document.getElementById("verifyDesc").textContent = mission.desc;
+  document.getElementById("photoInput").value = "";
+  document.getElementById("photoPreview").style.display = "none";
+  document.getElementById("uploadBox").style.display = "flex";
+  navigate("verify");
+}
+
+function previewPhoto(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+  if (!file.type.startsWith("image/")) {
+    alert("이미지 파일을 선택해주세요.");
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    const preview = document.getElementById("photoPreview");
+    preview.src = e.target.result;
+    preview.style.display = "block";
+    document.getElementById("uploadBox").style.display = "none";
+    state.photoSelected = true;
+  };
+  reader.readAsDataURL(file);
+}
+
+function submitMission() {
+  if (!state.currentMission) {
+    alert("먼저 미션을 선택해주세요.");
+    return;
+  }
+  if (!state.photoSelected) {
+    alert("먼저 인증 사진을 선택해주세요.");
+    return;
+  }
+
+  const mission = missionData[state.currentMission];
+  state.points += mission.reward;
+  state.missions += 1;
+  state.history.unshift({
+    title: mission.title,
+    points: mission.reward,
+    date: new Date().toLocaleDateString("ko-KR")
+  });
+
+  alert(`데모 인증 완료!\n${mission.reward.toLocaleString()}P가 적립되었습니다.`);
+  state.currentMission = null;
+  navigate("points");
+}
+
+function exchangeCoupon() {
+  if (state.points < 10000) {
+    alert(`포인트가 부족합니다.\n현재 ${state.points.toLocaleString()}P를 보유하고 있어요.\n10,000P를 모아주세요!`);
+    return;
+  }
+
+  state.points -= 10000;
+  state.coupons += 1;
+  state.history.unshift({
+    title: "스포츠 굿즈샵 쿠폰 교환",
+    points: -10000,
+    date: new Date().toLocaleDateString("ko-KR")
+  });
+  updateUI();
+  alert("데모 쿠폰 교환이 완료되었습니다. 실제 제휴처에서 사용할 수 있는 쿠폰은 아닙니다.");
+}
+
+function updateUI() {
+  const formatted = state.points.toLocaleString();
+  document.getElementById("homePoints").textContent = formatted;
+  document.getElementById("pointsTotal").textContent = formatted;
+  document.getElementById("profilePoints").textContent = formatted;
+  document.getElementById("profileName").textContent = state.name;
+  document.getElementById("greeting").textContent = `${state.name}님, 오늘도 지구를 위한 한 걸음 🌎`;
+  document.getElementById("missionCount").textContent = `${state.missions}회`;
+  document.getElementById("couponCount").textContent = `${state.coupons}개`;
+
+  const remaining = Math.max(0, 10000 - state.points);
+  document.getElementById("remainingPoints").textContent =
+    remaining === 0 ? "쿠폰 교환 가능!" : `${remaining.toLocaleString()}P 남음`;
+  document.getElementById("pointsProgress").style.width =
+    `${Math.min(100, state.points / 10000 * 100)}%`;
+
+  const history = document.getElementById("pointHistory");
+  if (state.history.length === 0) {
+    history.innerHTML = '<p class="sub">아직 적립 내역이 없습니다.</p>';
+  } else {
+    history.innerHTML = state.history.map(item => `
+      <div class="history row">
+        <div><strong style="color:var(--text)">${escapeHTML(item.title)}</strong>
+        <div class="sub">${escapeHTML(item.date)}</div></div>
+        <strong>${item.points > 0 ? "+" : ""}${item.points.toLocaleString()}P</strong>
+      </div>
+    `).join("");
+  }
+}
+
+function escapeHTML(value) {
+  return String(value).replace(/[&<>"']/g, char => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  }[char]));
+}
+
+// 장식용 QR 패턴 생성: 실제 QR 코드가 아닌 화면 시연용 패턴
+function makeDemoQR() {
+  const qr = document.getElementById("qrCode");
+  for (let i = 0; i < 81; i++) {
+    const cell = document.createElement("span");
+    const x = i % 9;
+    const y = Math.floor(i / 9);
+    const finder = (x < 3 && y < 3) || (x > 5 && y < 3) || (x < 3 && y > 5);
+    const edge = x === 0 || x === 2 || y === 0 || y === 2;
+    cell.className = (finder ? edge || (x === 1 && y === 1) : (i * 7 + x * y) % 3 !== 0) ? "on" : "";
+    qr.appendChild(cell);
+  }
+}
+makeDemoQR();
+updateUI();
+</script>
+</body>
+</html>
