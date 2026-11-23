@@ -1,291 +1,3 @@
-import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut as fbSignOut } from "firebase/auth";
-import {
-  getFirestore,
-  doc,
-  getDoc,
-  setDoc,
-  updateDoc,
-  collection,
-  getDocs,
-  getDocFromServer,
-  query,
-  orderBy
-} from "firebase/firestore";
-import firebaseConfig from "../firebase-applet-config.json";
-import { UserProfile, Transaction, CouponItem, VerificationRecord, AIAnalysisResult, VerificationStatus } from "./types";
-
-const resolvedConfig = {
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || firebaseConfig.projectId,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || firebaseConfig.appId,
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || firebaseConfig.apiKey,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || firebaseConfig.authDomain,
-  firestoreDatabaseId: import.meta.env.VITE_FIREBASE_DATABASE_ID || firebaseConfig.firestoreDatabaseId,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || firebaseConfig.storageBucket,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || firebaseConfig.messagingSenderId
-};
-
-// Optional backend API base URL (empty for same-origin server.ts; set VITE_API_BASE_URL when hosted on GitHub Pages)
-export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/+$/, "");
-
-const app = initializeApp(resolvedConfig);
-export const db = getFirestore(app, resolvedConfig.firestoreDatabaseId);
-export const auth = getAuth(app);
-export const googleProvider = new GoogleAuthProvider();
-
-export enum OperationType {
-  CREATE = "create",
-  UPDATE = "update",
-  DELETE = "delete",
-  LIST = "list",
-  GET = "get",
-  WRITE = "write"
-}
-
-export interface FirestoreErrorInfo {
-  error: string;
-  operationType: OperationType;
-  path: string | null;
-  authInfo: {
-    userId?: string | null;
-    email?: string | null;
-    emailVerified?: boolean | null;
-    isAnonymous?: boolean | null;
-    tenantId?: string | null;
-    providerInfo?: {
-      providerId?: string | null;
-      email?: string | null;
-    }[];
-  };
-}
-
-export function handleFirestoreError(
-  error: unknown,
-  operationType: OperationType,
-  path: string | null
-) {
-  const errInfo: FirestoreErrorInfo = {
-    error: error instanceof Error ? error.message : String(error),
-    authInfo: {
-      userId: auth.currentUser?.uid,
-      email: auth.currentUser?.email,
-      emailVerified: auth.currentUser?.emailVerified,
-      isAnonymous: auth.currentUser?.isAnonymous,
-      tenantId: auth.currentUser?.tenantId,
-      providerInfo:
-        auth.currentUser?.providerData?.map((provider) => ({
-          providerId: provider.providerId,
-          email: provider.email
-        })) || []
-    },
-    operationType,
-    path
-  };
-  console.error("Firestore Error: ", JSON.stringify(errInfo));
-  throw new Error(JSON.stringify(errInfo));
-}
-
-// Test connection on boot
-export async function testConnection() {
-  try {
-    await getDocFromServer(doc(db, "test", "connection"));
-  } catch (error) {
-    if (error instanceof Error && error.message.includes("the client is offline")) {
-      console.error("Please check your Firebase configuration.");
-    }
-  }
-}
-testConnection();
-
-// Authentication helpers
-export async function signInWithGoogle() {
-  try {
-    const result = await signInWithPopup(auth, googleProvider);
-    return result.user;
-  } catch (error) {
-    console.error("Google sign in failed:", error);
-    throw error;
-  }
-}
-
-export async function signOutUser() {
-  try {
-    await fbSignOut(auth);
-  } catch (error) {
-    console.error("Sign out error:", error);
-    throw error;
-  }
-}
-
-// Firestore user profile helpers
-export async function syncUserProfile(profile: UserProfile): Promise<void> {
-  const user = auth.currentUser;
-  if (!user) return;
-  const path = `users/${user.uid}`;
-  try {
-    const userRef = doc(db, "users", user.uid);
-    await setDoc(
-      userRef,
-      {
-        uid: user.uid,
-        name: profile.name,
-        email: profile.email || user.email || "",
-        points: profile.points,
-        completedMissions: profile.completedMissions,
-        co2SavedTotalG: profile.co2SavedTotalG,
-        level: profile.level,
-        updatedAt: new Date().toISOString()
-      },
-      { merge: true }
-    );
-  } catch (error) {
-    handleFirestoreError(error, OperationType.WRITE, path);
-  }
-}
-
-export async function fetchUserProfile(uid: string): Promise<Partial<UserProfile> | null> {
-  const path = `users/${uid}`;
-  try {
-    const docSnap = await getDoc(doc(db, "users", uid));
-    if (docSnap.exists()) {
-      return docSnap.data() as Partial<UserProfile>;
-    }
-    return null;
-  } catch (error) {
-    handleFirestoreError(error, OperationType.GET, path);
-    return null;
-  }
-}
-
-// Firestore transactions helpers
-export async function saveTransaction(tx: Transaction): Promise<void> {
-  const user = auth.currentUser;
-  if (!user) return;
-  const path = `users/${user.uid}/transactions/${tx.id}`;
-  try {
-    const txRef = doc(db, "users", user.uid, "transactions", tx.id);
-    await setDoc(txRef, {
-      id: tx.id,
-      userId: user.uid,
-      title: tx.title,
-      points: tx.points,
-      date: tx.date,
-      category: tx.category
-    });
-  } catch (error) {
-    handleFirestoreError(error, OperationType.CREATE, path);
-  }
-}
-
-export async function fetchUserTransactions(uid: string): Promise<Transaction[]> {
-  const path = `users/${uid}/transactions`;
-  try {
-    const txCol = collection(db, "users", uid, "transactions");
-    const q = query(txCol, orderBy("date", "desc"));
-    const snap = await getDocs(q);
-    return snap.docs.map((d) => d.data() as Transaction);
-  } catch (error) {
-    handleFirestoreError(error, OperationType.LIST, path);
-    return [];
-  }
-}
-
-// Firestore coupon helpers
-export async function saveUserCoupon(coupon: CouponItem): Promise<void> {
-  const user = auth.currentUser;
-  if (!user) return;
-  const path = `users/${user.uid}/coupons/${coupon.id}`;
-  try {
-    const couponRef = doc(db, "users", user.uid, "coupons", coupon.id);
-    await setDoc(couponRef, {
-      id: coupon.id,
-      userId: user.uid,
-      title: coupon.title,
-      subtitle: coupon.subtitle || "",
-      category: coupon.category || "goods",
-      requiredPoints: coupon.requiredPoints,
-      discountText: coupon.discountText,
-      code: coupon.code,
-      expiresAt: coupon.expiresAt,
-      description: coupon.description,
-      used: coupon.used,
-      usedAt: coupon.usedAt || ""
-    });
-  } catch (error) {
-    handleFirestoreError(error, OperationType.CREATE, path);
-  }
-}
-
-export async function updateUserCouponUsed(couponId: string, usedAt: string): Promise<void> {
-  const user = auth.currentUser;
-  if (!user) return;
-  const path = `users/${user.uid}/coupons/${couponId}`;
-  try {
-    const couponRef = doc(db, "users", user.uid, "coupons", couponId);
-    await updateDoc(couponRef, {
-      used: true,
-      usedAt
-    });
-  } catch (error) {
-    handleFirestoreError(error, OperationType.UPDATE, path);
-  }
-}
-
-export async function fetchUserCoupons(uid: string): Promise<CouponItem[]> {
-  const path = `users/${uid}/coupons`;
-  try {
-    const couponCol = collection(db, "users", uid, "coupons");
-    const snap = await getDocs(couponCol);
-    return snap.docs.map((d) => d.data() as CouponItem);
-  } catch (error) {
-    handleFirestoreError(error, OperationType.LIST, path);
-    return [];
-  }
-}
-
-// ==========================================
-// Verification & AI Photo Pipeline Functions
-// ==========================================
-
-export async function saveVerificationRecord(record: VerificationRecord): Promise<void> {
-  const user = auth.currentUser;
-  const path = `verifications/${record.id}`;
-  try {
-    const docRef = doc(db, "verifications", record.id);
-    await setDoc(docRef, record);
-    if (user) {
-      const userDocRef = doc(db, "users", user.uid, "verifications", record.id);
-      await setDoc(userDocRef, record);
-    }
-  } catch (error) {
-    handleFirestoreError(error, OperationType.CREATE, path);
-  }
-}
-
-export async function fetchAllVerifications(): Promise<VerificationRecord[]> {
-  const path = "verifications";
-  try {
-    const colRef = collection(db, "verifications");
-    const snap = await getDocs(colRef);
-    return snap.docs.map((d) => d.data() as VerificationRecord);
-  } catch (error) {
-    console.warn("Could not fetch from global verifications, will use local queue:", error);
-    return [];
-  }
-}
-
-export async function updateVerificationAdminReview(
-  recordId: string,
-  userId: string,
-  decision: "APPROVED" | "REJECTED",
-  adminNote: string,
-  pointsToAward: number
-): Promise<void> {
-  const adminEmail = auth.currentUser?.email || "admin@sports.kr";
-  const reviewedAt = new Date().toISOString();
-  const path = `verifications/${recordId}`;
-  try {
-    const docRef = doc(db, "verifications", recordId);
     await updateDoc(docRef, {
       status: decision,
       reviewedBy: adminEmail,
@@ -316,93 +28,88 @@ export async function executePhotoVerificationPipeline(
   userName: string
 ): Promise<{ photoId: string; result: AIAnalysisResult; pointsGranted: number }> {
   const photoId = `photo-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+  const currentUser = auth.currentUser;
 
-  // 1. Backend AI Analysis call (Gemini via server.ts proxy)
+  if (!currentUser) {
+    throw new Error("포인트 적립을 위해 구글 로그인이 필요합니다.");
+  }
+
+  const idToken = await currentUser.getIdToken();
+
   let response: Response;
   try {
     response = await fetch(`${API_BASE_URL}/api/analyze-photo`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        imageBase64,
-        mimeType,
-        missionId,
-        missionTitle,
-        expectedReward
-      })
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${idToken}`
+      },
+      body: JSON.stringify({ imageBase64, mimeType, missionId, missionTitle, expectedReward })
     });
   } catch {
-    return {
-      photoId,
-      result: {
-        status: "REJECTED",
-        activity: "UNKNOWN",
-        confidence: 0,
-        reason: "AI 판독 백엔드 서버에 연결할 수 없습니다. 별도 배포된 Gemini API 서버 상태를 확인해 주세요."
-      },
-      pointsGranted: 0
-    };
+    throw new Error("AI 판독 서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.");
   }
 
-  let result: AIAnalysisResult & { photoHash?: string };
-  try {
-    const contentType = response.headers.get("content-type") || "";
-    if (!contentType.includes("application/json")) {
-      throw new Error("Non-JSON response");
-    }
-    result = await response.json();
-  } catch {
-    result = {
-      status: "REJECTED",
-      activity: "UNKNOWN",
-      confidence: 0,
-      reason:
-        response.status === 404
-          ? "정적 웹페이지(GitHub Pages) 환경에서는 별도 배포된 Gemini API 서버(VITE_API_BASE_URL) 연결이 필요합니다."
-          : "판독 불가: 서버와 통신할 수 없거나 이미지 분석 중 문제가 발생했습니다."
-    };
+  if (!(response.headers.get("content-type") || "").includes("application/json")) {
+    throw new Error("AI 판독 서버에서 올바른 응답을 받지 못했습니다.");
   }
 
-  // Ensure result has required fields
-  if (!result || !result.status) {
-    result = {
-      status: "REJECTED",
-      activity: "UNKNOWN",
-      confidence: 0,
-      reason: "판독 불가: 유효한 분석 결과를 도출하지 못했습니다."
-    };
+  const result = (await response.json()) as AIAnalysisResult & {
+    photoHash?: string;
+    approvalToken?: string;
+  };
+
+  if (!response.ok) {
+    throw new Error(result?.reason || "AI 사진 분석 요청에 실패했습니다.");
+  }
+  if (!result?.status) {
+    throw new Error("AI 판독 결과가 올바르지 않습니다.");
   }
 
   let pointsGranted = 0;
-
-  // 2. Only grant points if status === "APPROVED"
   if (result.status === "APPROVED") {
-    const grantRes = await fetch(`${API_BASE_URL}/api/grant-points`, {
+    if (!result.photoHash || !result.approvalToken) {
+      throw new Error("AI 승인 정보가 누락되었습니다. 다시 인증해 주세요.");
+    }
+
+    const grantResponse = await fetch(`${API_BASE_URL}/api/grant-points`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${idToken}`
+      },
       body: JSON.stringify({
         photoHash: result.photoHash,
-        status: result.status,
-        points: expectedReward,
-        userId
+        approvalToken: result.approvalToken
       })
     });
 
-    if (grantRes.ok) {
-      pointsGranted = expectedReward;
+    if (!(grantResponse.headers.get("content-type") || "").includes("application/json")) {
+      throw new Error("포인트 저장 서버에서 올바른 응답을 받지 못했습니다.");
+    }
+
+    const grantData = await grantResponse.json();
+    if (!grantResponse.ok || grantData.success !== true || grantData.savedToFirestore !== true) {
+      throw new Error(grantData.message || "AI 인증은 승인되었지만 포인트 저장에 실패했습니다.");
+    }
+
+    pointsGranted = Number(grantData.pointsGranted || 0);
+    if (!Number.isFinite(pointsGranted) || pointsGranted <= 0) {
+      throw new Error("서버에서 올바른 포인트 지급 결과를 받지 못했습니다.");
     }
   }
 
-  // 3. Save verification record to Firestore
   const record: VerificationRecord = {
     id: photoId,
     photoId,
-    userId,
+    userId: currentUser.uid,
     userEmail,
     userName,
     missionId,
     missionTitle,
-    photoUrl: imageBase64.startsWith("data:") ? imageBase64 : `data:${mimeType};base64,${imageBase64}`,
+    photoUrl: imageBase64.startsWith("data:")
+      ? imageBase64
+      : `data:${mimeType};base64,${imageBase64}`,
     photoHash: result.photoHash || "",
     analysis: result,
     pointsAwarded: pointsGranted,
@@ -410,9 +117,11 @@ export async function executePhotoVerificationPipeline(
     status: result.status
   };
 
-  await saveVerificationRecord(record).catch((err) => {
-    console.warn("Could not save to Firestore, stored locally:", err);
-  });
+  try {
+    await saveVerificationRecord(record);
+  } catch (error) {
+    console.warn("인증 기록 저장 실패 (포인트 지급 결과에는 영향 없음):", error);
+  }
 
   return { photoId, result, pointsGranted };
 }
