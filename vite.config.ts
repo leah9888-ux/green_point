@@ -5,7 +5,7 @@ import tailwindcss from '@tailwindcss/vite';
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  base: '/green_point/',
+  base: '/program/',
   server: {
     port: 3000,
     host: '0.0.0.0',
