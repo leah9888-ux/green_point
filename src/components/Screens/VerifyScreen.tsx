@@ -1,8 +1,43 @@
 import React, { useState, useRef } from "react";
 import { ScreenId, Mission, AIAnalysisResult, UserProfile } from "../../types";
-import { ArrowLeft, Camera, CheckCircle2, AlertTriangle, XCircle, Search, RefreshCw, Sparkles, Clock } from "lucide-react";
+import { ArrowLeft, Camera, CheckCircle2, AlertTriangle, XCircle, Search, RefreshCw } from "lucide-react";
 import confetti from "canvas-confetti";
-import { executePhotoVerificationPipeline } from "../../firebase";
+
+
+// 발표용 사진 인증: AI 서버 호출 없이 지정된 원본 이미지와 비교합니다.
+const DEMO_IMAGES = [
+  { missionId: "tumbler", url: "/demo-photos/tumbler.jpg", activity: "TUMBLER" },
+  { missionId: "bike", url: "/demo-photos/bike.png", activity: "PUBLIC_BIKE" }
+];
+
+function imageSignature(source: string): Promise<number[]> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = 24;
+      canvas.height = 24;
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      if (!ctx) return reject(new Error("이미지 분석을 시작할 수 없습니다."));
+      ctx.drawImage(image, 0, 0, 24, 24);
+      const pixels = ctx.getImageData(0, 0, 24, 24).data;
+      const values: number[] = [];
+      for (let i = 0; i < pixels.length; i += 4) {
+        values.push(pixels[i], pixels[i + 1], pixels[i + 2]);
+      }
+      resolve(values);
+    };
+    image.onerror = () => reject(new Error("사진을 읽을 수 없습니다."));
+    image.src = source;
+  });
+}
+
+function imageDifference(a: number[], b: number[]): number {
+  if (a.length !== b.length) return 1;
+  let total = 0;
+  for (let i = 0; i < a.length; i++) total += Math.abs(a[i] - b[i]);
+  return total / (a.length * 255);
+}
 
 interface VerifyScreenProps {
   mission: Mission | null;
@@ -18,10 +53,10 @@ export const VerifyScreen: React.FC<VerifyScreenProps> = ({
   onPointsAwarded
 }) => {
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
-  const [mimeType, setMimeType] = useState<string>("image/jpeg");
   const [isVerifying, setIsVerifying] = useState<boolean>(false);
   const [analysisResult, setAnalysisResult] = useState<AIAnalysisResult | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [grantedPoints, setGrantedPoints] = useState<number>(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!mission) {
@@ -68,7 +103,6 @@ export const VerifyScreen: React.FC<VerifyScreenProps> = ({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setMimeType("image/jpeg");
     const reader = new FileReader();
     reader.onload = async (event) => {
       const rawDataUrl = event.target?.result as string;
@@ -76,64 +110,56 @@ export const VerifyScreen: React.FC<VerifyScreenProps> = ({
       const optimizedDataUrl = await compressImage(rawDataUrl, 1000, 0.85);
       setPhotoUrl(optimizedDataUrl);
       setAnalysisResult(null);
+      setGrantedPoints(0);
       setErrorMsg(null);
-      startAIVerification(optimizedDataUrl, "image/jpeg");
+      startAIVerification(optimizedDataUrl);
     };
     reader.readAsDataURL(file);
   };
 
-  const handleSelectSample = async (sampleUrl: string) => {
-    try {
-      setIsVerifying(true);
-      setErrorMsg(null);
-      // Fetch sample image and convert to Base64 for actual Gemini multimodal API call
-      const res = await fetch(sampleUrl);
-      const blob = await res.blob();
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64 = reader.result as string;
-        setPhotoUrl(base64);
-        setMimeType(blob.type || "image/jpeg");
-        startAIVerification(base64, blob.type || "image/jpeg");
-      };
-      reader.readAsDataURL(blob);
-    } catch {
-      setIsVerifying(false);
-      setErrorMsg("샘플 이미지를 불러오는 중 문제가 발생했습니다.");
-    }
-  };
-
-  const startAIVerification = async (base64Data: string, type: string) => {
+  const startAIVerification = async (base64Data: string) => {
     setIsVerifying(true);
     setAnalysisResult(null);
+    setGrantedPoints(0);
     setErrorMsg(null);
-
     try {
-      const { result, pointsGranted } = await executePhotoVerificationPipeline(
-        base64Data,
-        type,
-        mission.id,
-        mission.title,
-        mission.reward,
-        user.avatarSeed || "user",
-        user.email,
-        user.name
-      );
-
-      setAnalysisResult(result);
-
-      if (result.status === "APPROVED" && pointsGranted > 0) {
-        confetti({
-          particleCount: 90,
-          spread: 70,
-          origin: { y: 0.6 },
-          colors: ["#176b48", "#c8ed83", "#ffd700", "#ffffff"]
-        });
-        onPointsAwarded(mission.reward, mission.co2SavedGrams, mission.title);
+      const uploaded = await imageSignature(base64Data);
+      let matched: (typeof DEMO_IMAGES)[number] | undefined;
+      for (const entry of DEMO_IMAGES) {
+        if (entry.missionId !== mission.id) continue;
+        const known = await imageSignature(entry.url);
+        if (imageDifference(uploaded, known) < 0.055) {
+          matched = entry;
+          break;
+        }
       }
-    } catch (err: any) {
-      console.error(err);
-      setErrorMsg(err.message || "AI 사진 판독 중 오류가 발생했습니다.");
+      if (!matched) {
+        setAnalysisResult({
+          status: "REJECTED", activity: "UNKNOWN", confidence: 0,
+          reason: "등록된 시연용 인증 사진과 일치하지 않습니다. 지정된 사진을 업로드해 주세요."
+        });
+        return;
+      }
+      const duplicateKey = `green-point-demo-verified:${user.email}:${mission.id}`;
+      if (localStorage.getItem(duplicateKey)) {
+        setAnalysisResult({
+          status: "REJECTED", activity: matched.activity, confidence: 1,
+          reason: "이미 이 미션으로 포인트를 적립했습니다. 중복 지급은 불가능합니다."
+        });
+        return;
+      }
+      // 발표 시연 전용: 서버의 실제 포인트 검증/지급 API를 호출하지 않습니다.
+      localStorage.setItem(duplicateKey, "1");
+      const result: AIAnalysisResult = {
+        status: "APPROVED", activity: matched.activity, confidence: 1,
+        reason: "사전 등록된 사진과 일치하여 사진 인증 시연에 성공했습니다."
+      };
+      setAnalysisResult(result);
+      setGrantedPoints(mission.reward);
+      onPointsAwarded(mission.reward, mission.co2SavedGrams, mission.title);
+      confetti({ particleCount: 90, spread: 70, origin: { y: 0.6 }, colors: ["#176b48", "#c8ed83", "#ffd700"] });
+    } catch (error) {
+      setErrorMsg(error instanceof Error ? error.message : "사진 인증 중 문제가 발생했습니다.");
     } finally {
       setIsVerifying(false);
     }
@@ -142,6 +168,7 @@ export const VerifyScreen: React.FC<VerifyScreenProps> = ({
   const resetPhoto = () => {
     setPhotoUrl(null);
     setAnalysisResult(null);
+    setGrantedPoints(0);
     setErrorMsg(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
@@ -194,7 +221,7 @@ export const VerifyScreen: React.FC<VerifyScreenProps> = ({
               </div>
               <strong className="text-sm text-[#202c24]">실제 인증 사진 촬영/업로드</strong>
               <span className="text-xs text-[#7a857d]">
-                카메라 촬영 또는 갤러리에서 사진 업로드 (Gemini AI가 실시간 분석합니다)
+                카메라 촬영 또는 갤러리에서 사진 업로드 (등록된 사진과 일치하는지 확인합니다)
               </span>
               <input
                 ref={fileInputRef}
@@ -205,35 +232,6 @@ export const VerifyScreen: React.FC<VerifyScreenProps> = ({
               />
             </div>
 
-            {/* Quick Sample Photos */}
-            {mission.sampleImages && mission.sampleImages.length > 0 && (
-              <div className="mt-3.5">
-                <p className="text-[11px] font-bold text-[#56685a] mb-2 flex items-center gap-1">
-                  <span>⚡ 테스트용 샘플 사진 선택:</span>
-                </p>
-                <div className="grid grid-cols-2 gap-2">
-                  {mission.sampleImages.map((sample, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => handleSelectSample(sample.url)}
-                      className="group flex items-center gap-2 p-1.5 rounded-xl border border-[#d9e5d7] bg-white hover:border-[#176b48] hover:bg-[#f6faf4] transition-all text-left"
-                    >
-                      <img
-                        src={sample.url}
-                        alt={sample.label}
-                        className="w-11 h-11 rounded-lg object-cover"
-                      />
-                      <div className="min-w-0 flex-1">
-                        <span className="text-[11px] font-bold text-[#202c24] block truncate group-hover:text-[#176b48]">
-                          {sample.label}
-                        </span>
-                        <span className="text-[10px] text-[#7a857d]">AI 판독 테스트</span>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         ) : (
           <div className="flex flex-col gap-3">
@@ -258,9 +256,9 @@ export const VerifyScreen: React.FC<VerifyScreenProps> = ({
               <div className="p-4 rounded-xl bg-[#eaf5ed] border border-[#cbe5d2] flex items-center gap-3 text-xs text-[#176b48] font-bold animate-pulse">
                 <RefreshCw className="w-5 h-5 animate-spin text-[#176b48] shrink-0" />
                 <div>
-                  <div className="text-sm font-black">Google Gemini AI 실시간 정밀 분석 중...</div>
+                  <div className="text-sm font-black">등록된 사진과 비교하는 중...</div>
                   <div className="text-[11px] font-normal text-[#2e5942] mt-0.5">
-                    사진 속 물체와 실제 친환경 활동 맥락을 심사하고 있습니다.
+                    시연용으로 지정된 사진인지 확인하고 있습니다.
                   </div>
                 </div>
               </div>
@@ -305,7 +303,7 @@ export const VerifyScreen: React.FC<VerifyScreenProps> = ({
                         {analysisResult.status === "APPROVED" && "✅ 친환경 인증 승인 (포인트 적립)"}
                         {analysisResult.status === "RETAKE_REQUIRED" && "⚠️ 사진 재촬영 필요 (판독 불가)"}
                         {analysisResult.status === "MANUAL_REVIEW" && "🔍 관리자 검토 대기 (0P)"}
-                        {analysisResult.status === "REJECTED" && "❌ 판독 불가 / 인증 기준 미달 (반려)"}
+                        {analysisResult.status === "REJECTED" && "❌ 사진 인증 실패 (반려)"}
                       </span>
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/80 border border-black/10">
                         신뢰도 {Math.round(analysisResult.confidence * 100)}%
@@ -328,9 +326,9 @@ export const VerifyScreen: React.FC<VerifyScreenProps> = ({
                       <div className="mt-2.5 p-2.5 rounded-xl bg-red-100/80 border border-red-300 text-red-800 text-xs font-bold flex items-start gap-2">
                         <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
                         <div>
-                          <div>친환경 활동 인증 실패 경고</div>
+                          <div>사진 인증 실패 안내</div>
                           <div className="text-[11px] font-normal text-red-700 mt-0.5">
-                            {mission.title}과 무관하거나 일회용품인 사진은 포인트가 지급되지 않습니다. 올바른 텀블러 사진을 올려주세요.
+                            {mission.title}과 무관하거나 일회용품인 사진은 포인트가 지급되지 않습니다. 등록된 시연용 사진을 올려주세요.
                           </div>
                         </div>
                       </div>
@@ -361,7 +359,7 @@ export const VerifyScreen: React.FC<VerifyScreenProps> = ({
                   {analysisResult.status === "APPROVED" ? (
                     <>
                       <div className="font-extrabold text-[#176b48]">
-                        +{mission.reward.toLocaleString()}P 적립 완료! 🎉
+                        +{grantedPoints.toLocaleString()}P 적립 완료! 🎉
                       </div>
                       <button
                         onClick={() => onNavigate("points")}
