@@ -48,7 +48,6 @@ interface VerifyScreenProps {
 
 export const VerifyScreen: React.FC<VerifyScreenProps> = ({
   mission,
-  user,
   onNavigate,
   onPointsAwarded
 }) => {
@@ -140,16 +139,7 @@ export const VerifyScreen: React.FC<VerifyScreenProps> = ({
         });
         return;
       }
-      const duplicateKey = `green-point-demo-verified:${user.email}:${mission.id}`;
-      if (localStorage.getItem(duplicateKey)) {
-        setAnalysisResult({
-          status: "REJECTED", activity: matched.activity, confidence: 1,
-          reason: "이미 이 미션으로 포인트를 적립했습니다. 중복 지급은 불가능합니다."
-        });
-        return;
-      }
-      // 발표 시연 전용: 서버의 실제 포인트 검증/지급 API를 호출하지 않습니다.
-      localStorage.setItem(duplicateKey, "1");
+      // 발표 시연 전용: 반복 인증 허용 (실서비스에서는 중복 방지 필요).
       const result: AIAnalysisResult = {
         status: "APPROVED", activity: matched.activity, confidence: 1,
         reason: "사전 등록된 사진과 일치하여 사진 인증 시연에 성공했습니다."
